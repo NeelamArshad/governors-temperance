@@ -246,4 +246,4 @@ ggsave("lifespan_predictions.png", width = 8, height = 6, dpi = 300, bg = "white
 
 * What is, truly, your best guess as to the causal effect of winning an election on longevity?
 
-Republicans live longer and younger ages like 32 years are wining the elction.
+Republicans live longer and younger ages like 32 years are wining the election.
