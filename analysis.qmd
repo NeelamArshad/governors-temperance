@@ -103,13 +103,64 @@ tribble(
 
 * Take a look at our fitted model. Use `tidy()` to examine the confidence intervals of the parameters. Are they any changes we might consider making?
 
+```{r}
+fit_causal |> tidy(conf.int = TRUE)
+```
 
+We can ignore partyThird party variable as its confidence intervals passes zero.
 
 * Use AI to create a nice looking table of the parameter values. (Only work on this question if your group is going very fast and has extra time.)
 
+```{r}
+library(dplyr)
+library(broom)
+library(gt)
+
+# Tidy the model and create the table
+fit_causal |> 
+  tidy(conf.int = TRUE) |> 
+  mutate(
+    p.value = formatC(p.value, format = "e", digits = 2),  # scientific notation for p-values
+    estimate = round(estimate, 2),
+    std.error = round(std.error, 2),
+    statistic = round(statistic, 2),
+    conf.low = round(conf.low, 2),
+    conf.high = round(conf.high, 2)
+  ) |> 
+  gt() |> 
+  tab_header(
+    title = "Model Parameter Estimates"
+  ) |> 
+  cols_label(
+    term = "Term",
+    estimate = "Estimate",
+    std.error = "Std. Error",
+    statistic = "t Statistic",
+    p.value = "p-value",
+    conf.low = "95% CI (Lower)",
+    conf.high = "95% CI (Upper)"
+  ) |> 
+  fmt_markdown(columns = vars(term)) |> 
+  tab_options(
+    table.font.size = "small",
+    column_labels.font.weight = "bold",
+    heading.title.font.size = 16
+  )
+
+```
 
 * Use AI to create LaTeX code for our DGM. (Only work on this question if your group is going very fast and has extra time.)
 
+$$
+\text{lived\_after}_i =
+67.5647
++ 8.6345 \cdot \text{election\_resultWin}_i
+- 1.4598 \cdot \text{win\_margin}_i
+- 0.8869 \cdot \text{election\_age}_i
++ 4.0386 \cdot \text{partyRepublican}_i
+- 9.5035 \cdot \text{partyThirdParty}_i
++ \varepsilon_i
+$$
 
 ## Questions and Answers
 
@@ -117,14 +168,80 @@ Recall our original question: Do winning candidates live longer? Well, do they? 
 
 * First, let's look at individual variables which are included in our DGM. Hint: Use `plot_predictions()`
 
+```{r}
+fit_causal |> predictions()
+```
+
+```{r}
+fit_causal |> plot_predictions(condition = c("election_result"))
+```
+
+The plot demonstrates that winning candidates live longer.
+
+```{r}
+fit_causal |> plot_predictions(condition = c("party"))
+```
+
+Republicans live longer and data is scattered for Thirdparty.
+
+```{r}
+fit_causal |> plot_predictions(condition = c("election_age"))
+```
+
+Election age and lived after have a negative realtionship.
+
 * Second, combine several variables --- and think about which ones you should select --- into a nice looking plot. There is no wrong answer! But some plots look better than others.
+
+```{r}
+fit_causal |> plot_predictions(condition = c("election_result", "election_age", "party"))
+```
+
+
 
 * If there is time, use the `draw = FALSE` option to `plot_predictions()` to pull out the raw data. Then, tell an AI about that tibble and ask for some nice ggplot code. Pay special attention to the subtitle.
 
+```{r}
+fit_causal |> plot_predictions(condition = c("election_result", "election_age", "party"), draw = FALSE)
+```
 
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Ensure election_age is numeric
+preds <- fit_causal |> 
+  plot_predictions(condition = c("election_result", "election_age", "party"), draw = FALSE) |>
+  mutate(
+    election_age = as.numeric(election_age),  # Ensure age is numeric
+    party = factor(party),
+    election_result = factor(election_result)
+  )
+
+# Plot predictions
+ggplot(preds, aes(x = election_age, y = estimate, color = party)) +
+  geom_line(aes(linetype = election_result), size = 1) +
+  geom_ribbon(
+    aes(ymin = conf.low, ymax = conf.high, fill = party),
+    alpha = 0.2, color = NA
+  ) +
+  labs(
+    title = "Predicted Lifespan After Election",
+    subtitle = "Model predictions by candidate party, age, and win/loss outcome",
+    x = "Candidate Age at Time of Election",
+    y = "Predicted Years Lived After Election",
+    color = "Party",
+    fill = "Party",
+    linetype = "Election Result"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "bottom",
+    strip.text = element_text(face = "bold")
+  )
+```
 
 ## Humility
 
 * What is, truly, your best guess as to the causal effect of winning an election on longevity?
 
-
+Republicans live longer and  younger ages like 32 years and wining the elction.
