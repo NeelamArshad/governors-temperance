@@ -238,6 +238,8 @@ ggplot(preds, aes(x = election_age, y = estimate, color = party)) +
     legend.position = "bottom",
     strip.text = element_text(face = "bold")
   )
+ggsave("lifespan_predictions.png", width = 8, height = 6, dpi = 300, bg = "white")
+
 ```
 
 ## Humility
